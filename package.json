@@ -1,0 +1,15 @@
+{
+  "name": "sca-sast-test-sample",
+  "version": "1.0.0",
+  "description": "Sample project with intentionally vulnerable dependencies and insecure code for testing SCA & SAST scanners.",
+  "private": true,
+  "dependencies": {
+    "lodash": "4.17.15",            // known prototype-pollution risk in older lodash
+    "request": "2.88.0",            // deprecated; many scanners flag it
+    "mysql": "2.18.1",              // older mysql client versions often flagged for issues
+    "serialize-javascript": "1.4.0" // older versions have known RCE/unsafe-serialization concerns
+  },
+  "scripts": {
+    "start": "node app.js"
+  }
+}
