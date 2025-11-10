@@ -1,0 +1,64 @@
+/**
+ * WARNING: This file is intentionally vulnerable for security testing.
+ * Do not use any patterns from this file in production code.
+ */
+
+// --- 1. Hardcoded Secrets ---
+// Secret scanners detect strings that have high entropy (randomness) 
+// or match known patterns of API keys and secrets.
+
+// FAKE Atlassian API Token (matches a known pattern)
+// Scanners will flag this due to the prefix "BAtk_" and the high-entropy string.
+const ATLASSIAN_API_TOKEN = "BAtk_aBcDeFgHiJkLmNoPqRsTuVwXyZ1234567890abc";
+
+// FAKE Asana Client Secret (high-entropy string)
+// Scanners will flag this as a potential generic secret due to its length and randomness.
+const ASANA_CLIENT_SECRET = "0/a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0";
+
+// --- 2. SAST-Detectable Vulnerability ---
+// SAST tools analyze code without executing it (statically) to find
+// vulnerabilities. One of the most common is "injection".
+
+const { exec } = require('child_process');
+
+/**
+ * Simulates a function (like an Express.js route handler)
+ * that takes user input and uses it in an unsafe way.
+ * * @param {object} req - Simulated request object (e.g., from Express)
+ * @param {object} res - Simulated response object
+ */
+function getUserFile(req, res) {
+  // 'req.query.filename' comes from an external user (e.g., a URL parameter).
+  // It is "tainted" or untrusted.
+  const userInput = req.query.filename;
+
+  // VULNERABILITY: Command Injection
+  // This line directly concatenates the untrusted 'userInput' into a
+  // shell command.
+  // A SAST tool will detect this data flow:
+  // 1. Source: User input from `req.query.filename`
+  // 2. Sink: A dangerous function like `exec()`
+  //
+  // An attacker could provide input like: "userfile.txt; rm -rf /"
+  // The final command would be: "cat /var/user_files/userfile.txt; rm -rf /"
+  exec('cat /var/user_files/' + userInput, (error, stdout, stderr) => {
+    if (error) {
+      console.error(`exec error: ${error}`);
+      return res.send('Error');
+    }
+    res.send(`File content: ${stdout}`);
+  });
+}
+
+// Example of how this might be called (for context)
+const simulated_request = {
+  query: {
+    filename: "test.txt" // This is the user-controlled input
+  }
+};
+
+const simulated_response = {
+  send: (data) => console.log(data)
+};
+
+// getUserFile(simulated_request, simulated_response);
